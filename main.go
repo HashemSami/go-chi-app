@@ -18,29 +18,6 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>Contact</h1>")
 }
 
-// func pathHandler(w http.ResponseWriter, r *http.Request) {
-// 	switch r.URL.Path {
-// 	case "/":
-// 		homeHendler(w, r)
-// 	case "/contact":
-// 		contactHandler(w, r)
-// 	}
-// }
-
-// implementing the handler inerface to add to the listen server
-type Router struct{}
-
-func (router Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/":
-		homeHendler(w, r)
-	case "/contact":
-		contactHandler(w, r)
-	default:
-		http.Error(w, "Page not Found", http.StatusNotFound)
-	}
-}
-
 func main() {
 	r := chi.NewRouter()
 
@@ -50,6 +27,7 @@ func main() {
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
+
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", r)
 }
