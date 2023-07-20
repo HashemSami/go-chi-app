@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func homeHendler(w http.ResponseWriter, r *http.Request) {
@@ -39,14 +42,11 @@ func (router Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var router Router
-	// http.Handler - interface with the ServeHTTP method
-	// http.HandlerFunc - a function type accepts same args as ServeHTTP method,
-	// and also implments http.Handler
+	r := chi.NewRouter()
 
-	// http.Handle("/", http.Handler)
-	// http.HandleFunc("/", pathHandler)
-
-	fmt.Println("Startin gthe server on port :3000")
-	http.ListenAndServe(":3000", router)
+	r.Use(middleware.Logger)
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("welcome"))
+	})
+	http.ListenAndServe(":3000", r)
 }
