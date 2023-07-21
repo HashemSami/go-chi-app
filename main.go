@@ -2,18 +2,17 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
 
+	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func executeTemplate(w http.ResponseWriter, filePath string) {
-	w.Header().Set("Content-Type", "text/html; charset-utf-8")
-	tpl, err := template.ParseFiles(filePath)
+	tpl, err := views.Parse(filePath)
 	if err != nil {
 		log.Printf("parsing template: %v", err)
 		http.Error(w, "There eas an error parsing the template.",
@@ -21,13 +20,7 @@ func executeTemplate(w http.ResponseWriter, filePath string) {
 		return
 	}
 
-	templateErr := tpl.Execute(w, nil)
-	if templateErr != nil {
-		log.Printf("executing template: %v", err)
-		http.Error(w, "There eas an error executing the template.",
-			http.StatusInternalServerError)
-		return
-	}
+	tpl.Execute(w, nil)
 }
 
 func homeHendler(w http.ResponseWriter, r *http.Request) {
