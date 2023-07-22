@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 
@@ -17,17 +16,13 @@ func main() {
 
 	// parsing the html files before srving the app
 	// to users
-	homeTpl, err := views.Parse(filepath.Join("templates", "home.html"))
-	if err != nil {
-		log.Printf("parsing template: %v", err)
-		return
-	}
+	homeTpl := views.Must(
+		views.Parse(filepath.Join("templates", "home.html")),
+	)
 
-	contactTpl, err := views.Parse(filepath.Join("templates", "contact.html"))
-	if err != nil {
-		log.Printf("parsing template: %v", err)
-		return
-	}
+	contactTpl := views.Must(
+		views.Parse(filepath.Join("templates", "contact.html")),
+	)
 
 	r.Use(middleware.Logger)
 
