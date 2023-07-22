@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
 
 	"github.com/HashemSami/go-chi-app/controllers"
 	"github.com/HashemSami/go-chi-app/templates"
@@ -22,7 +21,7 @@ func main() {
 	)
 
 	contactTpl := views.Must(
-		views.Parse(filepath.Join("templates", "contact.html")),
+		views.ParseFS(templates.FS, "contact.html"),
 	)
 
 	r.Use(middleware.Logger)
