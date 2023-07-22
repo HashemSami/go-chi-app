@@ -16,8 +16,8 @@ func Must(t Template, err error) Template {
 }
 
 // pasring function to embed the html file while building the app binaries
-func ParseFS(fs fs.FS, patters string) (Template, error) {
-	tpl, err := template.ParseFS(fs, patters)
+func ParseFS(fs fs.FS, patters ...string) (Template, error) {
+	tpl, err := template.ParseFS(fs, patters...)
 	if err != nil {
 		return Template{}, fmt.Errorf("parsing template: %w", err)
 	}
