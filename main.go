@@ -6,39 +6,33 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/HashemSami/go-chi-app/controllers"
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func executeTemplate(w http.ResponseWriter, filePath string) {
-	tpl, err := views.Parse(filePath)
-	if err != nil {
-		log.Printf("parsing template: %v", err)
-		http.Error(w, "There eas an error parsing the template.",
-			http.StatusInternalServerError)
-		return
-	}
-
-	tpl.Execute(w, nil)
-}
-
-func homeHendler(w http.ResponseWriter, r *http.Request) {
-	tplPath := filepath.Join("templates", "home.html")
-	executeTemplate(w, tplPath)
-}
-
-func contactHandler(w http.ResponseWriter, r *http.Request) {
-	tplPath := filepath.Join("templates", "contact.html")
-	executeTemplate(w, tplPath)
-}
-
 func main() {
 	r := chi.NewRouter()
 
+	// parsing the html files before srving the app
+	// to users
+	homeTpl, err := views.Parse(filepath.Join("templates", "home.html"))
+	if err != nil {
+		log.Printf("parsing template: %v", err)
+		return
+	}
+
+	contactTpl, err := views.Parse(filepath.Join("templates", "contact.html"))
+	if err != nil {
+		log.Printf("parsing template: %v", err)
+		return
+	}
+
 	r.Use(middleware.Logger)
-	r.Get("/", homeHendler)
-	r.Get("/contact", contactHandler)
+
+	r.Get("/", controllers.StaticHandler(homeTpl))
+	r.Get("/contact", controllers.StaticHandler(contactTpl))
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
