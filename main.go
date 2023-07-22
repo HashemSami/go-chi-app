@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/HashemSami/go-chi-app/controllers"
+	"github.com/HashemSami/go-chi-app/templates"
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,7 +18,7 @@ func main() {
 	// parsing the html files before srving the app
 	// to users
 	homeTpl := views.Must(
-		views.Parse(filepath.Join("templates", "home.html")),
+		views.ParseFS(templates.FS, "home.html"),
 	)
 
 	contactTpl := views.Must(

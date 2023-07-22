@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 )
@@ -12,6 +13,16 @@ func Must(t Template, err error) Template {
 		panic(err)
 	}
 	return t
+}
+
+// pasring function to embed the html file while building the app binaries
+func ParseFS(fs fs.FS, patters string) (Template, error) {
+	tpl, err := template.ParseFS(fs, patters)
+	if err != nil {
+		return Template{}, fmt.Errorf("parsing template: %w", err)
+	}
+
+	return Template{htmlTpl: tpl}, nil
 }
 
 func Parse(filePath string) (Template, error) {
