@@ -17,17 +17,22 @@ func main() {
 	// parsing the html files before srving the app
 	// to users
 	homeTpl := views.Must(
-		views.ParseFS(templates.FS, "home.html"),
+		views.ParseFS(templates.FS, "home.html", "tailwind.html"),
 	)
 
 	contactTpl := views.Must(
-		views.ParseFS(templates.FS, "contact.html"),
+		views.ParseFS(templates.FS, "contact.html", "tailwind.html"),
+	)
+
+	faqTpl := views.Must(
+		views.ParseFS(templates.FS, "faq.html", "tailwind.html"),
 	)
 
 	r.Use(middleware.Logger)
 
 	r.Get("/", controllers.StaticHandler(homeTpl))
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
+	r.Get("/faq", controllers.FAQ(faqTpl))
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
