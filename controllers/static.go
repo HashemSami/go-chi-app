@@ -23,7 +23,10 @@ func FAQ(tpl views.Template) http.HandlerFunc {
 			Answer:   "Human",
 		}, {
 			Question: "Is there a free version?",
-			Answer:   "Yes, look at <a href=\"http://google.com\">Here</a>",
+			Answer:   "Yes, look at <a class=\"underline\" href=\"http://google.com\">Here</a>",
+		}, {
+			Question: "new question?",
+			Answer:   "new answer",
 		},
 	}
 
