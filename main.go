@@ -28,11 +28,17 @@ func main() {
 		views.ParseFS(templates.FS, "faq.html", "tailwind.html"),
 	)
 
+	signupTpl := views.Must(
+		views.ParseFS(templates.FS, "signup.html", "tailwind.html"),
+	)
+
 	r.Use(middleware.Logger)
 
 	r.Get("/", controllers.StaticHandler(homeTpl))
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
 	r.Get("/faq", controllers.FAQ(faqTpl))
+	r.Get("/signup", controllers.StaticHandler(signupTpl))
+
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
