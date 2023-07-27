@@ -12,8 +12,15 @@ type Users struct {
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+
+	// this is getting values from the url query and add it
+	// to the form as an initial data
+	data.Email = r.FormValue("email")
 	// we need a view to render
-	u.Templates.New.Execute(w, nil)
+	u.Templates.New.Execute(w, data)
 }
 
 // func (u Users) Create(w http.ResponseWriter, r *http.Request) {
