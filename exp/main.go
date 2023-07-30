@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
-	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type PostgresConfig struct {
@@ -19,8 +18,8 @@ type PostgresConfig struct {
 
 func (cfg PostgresConfig) String() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
 }
 
 func main() {
@@ -34,28 +33,32 @@ func main() {
 		SSLMode:  "disable",
 	}
 	fmt.Println(cfg.String())
-	// urlExample := "postgres://username:password@localhost:5432/database_name"
-	dbpool, err := pgxpool.New(context.Background(), cfg.String())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
-	}
-	defer dbpool.Close()
 
-	var greeting string
-	err = dbpool.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
+	db, err := sql.Open("pgx", cfg.String())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	fmt.Println(greeting)
+	defer db.Close()
 
-	createTables(dbpool)
+	// to make sure that the database is responding
+	err = db.Ping()
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("connected...")
+
+	// createTables(db)
+	// insertData(db)
+	// insertRow(db)
+	queryUser(db)
+	// createFakeOrders(db)
 }
 
-func createTables(dbpool *pgxpool.Pool) {
-	_, err := dbpool.Exec(context.Background(), `
+func createTables(db *sql.DB) {
+	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS users(
 		id SERIAL PRIMARY KEY,
 		age INT,
@@ -76,4 +79,71 @@ func createTables(dbpool *pgxpool.Pool) {
 	}
 
 	fmt.Println("Tables created.")
+}
+
+func insertData(db *sql.DB) {
+	name := "Hashem5"
+	email := "Hash5@hash.com"
+
+	_, err := db.Exec(
+		`INSERT INTO users(first_name, email) 
+	VALUES($1, $2)`,
+		name, email)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Data inserted.")
+}
+
+func insertRow(db *sql.DB) {
+	name := "Hashem7"
+	email := "Hash7@hash.com"
+
+	row := db.QueryRow(
+		`INSERT INTO users(first_name, email) 
+	VALUES($1, $2) RETURNING id`,
+		name, email)
+
+	var id int
+	err := row.Scan(&id)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("row created with id:", id)
+}
+
+func queryUser(db *sql.DB) {
+	email := "Hash2@hash.com"
+	row := db.QueryRow(
+		`SELECT first_name from users where email=$1`, email)
+
+	var name string
+	err := row.Scan(&name)
+	if err == sql.ErrNoRows {
+		fmt.Println("No Row Found!!!")
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("name retirved:", name)
+}
+
+func createFakeOrders(db *sql.DB) {
+	userId := 1
+	for i := 1; i <= 5; i++ {
+		amount := i * 100
+		desc := fmt.Sprintf("Fake order #%d", i)
+
+		_, err := db.Exec(`
+		INSERT INTO orders(user_id, amount, descriptions)
+		VALUES($1,$2,$3)`, userId, amount, desc)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	fmt.Println("added fake orders.")
 }
