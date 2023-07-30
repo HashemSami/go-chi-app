@@ -1,13 +1,14 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
+	"os"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type postgresConfig struct {
+type PostgresConfig struct {
 	Host     string
 	Port     string
 	User     string
@@ -16,27 +17,63 @@ type postgresConfig struct {
 	SSLMode  string
 }
 
-func (cfg postgresConfig) String() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
+func (cfg PostgresConfig) String() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
 }
 
 func main() {
-	// this doesnt actully communicating with the server
+	// this doesn't actually communicating with the server
+	cfg := PostgresConfig{
+		Host:     "localhost",
+		Port:     "5432",
+		User:     "hashem",
+		Password: "4g5gbook",
+		Database: "lenslocked",
+		SSLMode:  "disable",
+	}
+	fmt.Println(cfg.String())
+	// urlExample := "postgres://username:password@localhost:5432/database_name"
+	dbpool, err := pgxpool.New(context.Background(), cfg.String())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
 
-	db, err := sql.Open("pgx",
-		"host=localhost port=5432 user=baloo password=junglebook dbname=lenslocked sslmode=disable")
+	var greeting string
+	err = dbpool.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(greeting)
+
+	createTables(dbpool)
+}
+
+func createTables(dbpool *pgxpool.Pool) {
+	_, err := dbpool.Exec(context.Background(), `
+	CREATE TABLE IF NOT EXISTS users(
+		id SERIAL PRIMARY KEY,
+		age INT,
+		first_name TEXT,
+		last_name TEXT,
+		email TEXT UNIQUE NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS orders(
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL,
+		amount INT,
+		descriptions TEXT
+	);
+	`)
 	if err != nil {
 		panic(err)
 	}
 
-	defer db.Close()
-
-	// to make sure that the database is responding
-	err = db.Ping()
-
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("connected...")
+	fmt.Println("Tables created.")
 }
