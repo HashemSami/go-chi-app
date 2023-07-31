@@ -67,6 +67,7 @@ func createTables(db *sql.DB) {
 		last_name TEXT,
 		email TEXT UNIQUE NOT NULL
 	);
+	--4028/4032 4147
 
 	CREATE TABLE IF NOT EXISTS orders(
 		id SERIAL PRIMARY KEY,
