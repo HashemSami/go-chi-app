@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/HashemSami/go-chi-app/controllers"
+	"github.com/HashemSami/go-chi-app/models"
 	"github.com/HashemSami/go-chi-app/templates"
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
@@ -19,21 +20,33 @@ func main() {
 	homeTpl := views.Must(
 		views.ParseFS(templates.FS, "home.html", "tailwind.html"),
 	)
-
 	contactTpl := views.Must(
 		views.ParseFS(templates.FS, "contact.html", "tailwind.html"),
 	)
-
 	faqTpl := views.Must(
 		views.ParseFS(templates.FS, "faq.html", "tailwind.html"),
 	)
-
 	signupTpl := views.Must(
 		views.ParseFS(templates.FS, "signup.html", "tailwind.html"),
 	)
 
+	// get the DB connection
+	cfg := models.DefaultPostgresConfig()
+	db, err := models.Open(cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// get the Services
+	userService := models.UserService{
+		DB: db,
+	}
+
 	// creating users controllers
-	usersC := controllers.Users{}
+	usersC := controllers.Users{
+		UserService: &userService,
+	}
 	usersC.Templates.New = signupTpl
 
 	r.Use(middleware.Logger)

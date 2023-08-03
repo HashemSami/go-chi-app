@@ -4,37 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/HashemSami/go-chi-app/models"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type PostgresConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Database string
-	SSLMode  string
-}
-
-func (cfg PostgresConfig) String() string {
-	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
-}
-
 func main() {
-	// this doesn't actually communicating with the server
-	cfg := PostgresConfig{
-		Host:     "localhost",
-		Port:     "5432",
-		User:     "hashem",
-		Password: "4g5gbook",
-		Database: "lenslocked",
-		SSLMode:  "disable",
-	}
-	fmt.Println(cfg.String())
+	cfg := models.DefaultPostgresConfig()
 
-	db, err := sql.Open("pgx", cfg.String())
+	db, err := models.Open(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -50,12 +27,27 @@ func main() {
 
 	fmt.Println("connected...")
 
+	us := models.UserService{
+		DB: db,
+	}
+
+	newUser := models.NewUser{
+		Email:    "Hash2@hash.com",
+		Password: "hash1234",
+	}
+
+	user, err := us.Create(newUser)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(user)
 	// createTables(db)
 	// insertData(db)
 	// insertRow(db)
 	// queryUser(db)
 	// createFakeOrders(db)
-	queryOrders(db)
+	// queryOrders(db)
 }
 
 func createTables(db *sql.DB) {
