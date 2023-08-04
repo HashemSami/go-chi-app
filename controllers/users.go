@@ -9,7 +9,8 @@ import (
 
 type Users struct {
 	Templates struct {
-		New Template
+		New    Template
+		SignIn Template
 	}
 	UserService *models.UserService
 }
@@ -60,4 +61,32 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, "User created: %+v", user)
+}
+
+func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+
+	// this is getting values from the url query and add it
+	// to the form as an initial data
+	data.Email = r.FormValue("email")
+	// we need a view to render
+	u.Templates.SignIn.Execute(w, data)
+}
+
+func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
+	data := models.NewUser{
+		Email:    r.FormValue("email"),
+		Password: r.FormValue("password"),
+	}
+
+	user, err := u.UserService.Authenticate(data)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "User authenticated: %+v", user)
 }

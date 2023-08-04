@@ -29,6 +29,9 @@ func main() {
 	signupTpl := views.Must(
 		views.ParseFS(templates.FS, "signup.html", "tailwind.html"),
 	)
+	signinTpl := views.Must(
+		views.ParseFS(templates.FS, "signin.html", "tailwind.html"),
+	)
 
 	// get the DB connection
 	cfg := models.DefaultPostgresConfig()
@@ -48,6 +51,7 @@ func main() {
 		UserService: &userService,
 	}
 	usersC.Templates.New = signupTpl
+	usersC.Templates.SignIn = signinTpl
 
 	r.Use(middleware.Logger)
 
@@ -56,6 +60,8 @@ func main() {
 	r.Get("/faq", controllers.FAQ(faqTpl))
 	r.Get("/signup", usersC.New)
 	r.Post("/users", usersC.Create)
+	r.Get("/signin", usersC.SignIn)
+	r.Post("/signin", usersC.ProcessSignIn)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)

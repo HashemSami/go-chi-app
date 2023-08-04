@@ -3,9 +3,9 @@
 
   <div class="px-8 py-8 bg-white rounded shadow">
     <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-grey-900">
-      Start sharing your photos today!
+      Welcome Back!
     </h1>
-    <form action="/users" method="post">
+    <form action="/signin" method="post">
       <div class="py-2">
         <label for="email" class="text-sm font-semibold">Email Address</label>
         <input name="email" id="email" type="email" placeholder="Email address" required autocomplete="email"
@@ -20,11 +20,11 @@
       </div>
       <div class="py-2">
         <button class="w-full py-4 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg"
-          type="submit">Sign up</button>
+          type="submit">Sign in</button>
       </div>
       <div class="py-2 w-full flex justify-between">
-        <p class="text-xs text-gray-500">Already have an account?
-          <a href="/signin" class="underline">sign in</a>
+        <p class="text-xs text-gray-500">Need an account?
+          <a href="/signup" class="underline">sign up</a>
         </p>
         <p class="text-xs text-gray-500">forget your password?</p>
       </div>
