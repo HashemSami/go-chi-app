@@ -35,15 +35,15 @@ func (us *UserService) Create(nu NewUser) (*User, error) {
 
 	passwordHash := string(hashedBytes)
 
+	user := User{
+		Email:        email,
+		PasswordHash: passwordHash,
+	}
+
 	row := us.DB.QueryRow(
 		`INSERT INTO users(email, password_hash)
 	VALUES($1, $2) RETURNING id`,
 		email, passwordHash)
-
-	user := User{
-		Email:        email,
-		PasswordHash: string(hashedBytes),
-	}
 
 	err = row.Scan(&user.ID)
 	if err != nil {

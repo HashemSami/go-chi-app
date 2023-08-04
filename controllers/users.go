@@ -47,7 +47,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// FormValue can also get the query parameters from the URL
 	// getting the same name attribute used in the html
 	email := r.FormValue("email")
-	password := r.FormValue("email")
+	password := r.FormValue("password")
 
 	nu := models.NewUser{
 		Email:    email,
@@ -89,4 +89,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "User authenticated: %+v", user)
+
+	// cookie:=http.Cookie(
+	// )
 }
