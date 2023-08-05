@@ -10,6 +10,7 @@ import (
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 )
 
 func main() {
@@ -68,6 +69,14 @@ func main() {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
 
+	csrfKey := "kfjggbctiopwoidjipiuewdxhjksla"
+	csrfMw := csrf.Protect(
+		[]byte(csrfKey),
+		// TODO: FIX this before deploying
+		// for HTTPS
+		csrf.Secure(false),
+	)
+
 	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(":3000", csrfMw(r))
 }
