@@ -27,21 +27,6 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	u.Templates.New.Execute(w, data)
 }
 
-// func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-// 	// before calling post form, we must call
-// 	// the parse form function first to be able to use the
-// 	// post request as a form
-// 	err := r.ParseForm()
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	// getting the same name attribute used in the html
-// 	fmt.Fprint(w, "Email: ", r.PostForm.Get("email"))
-// 	fmt.Fprint(w, "Password: ", r.PostForm.Get("password"))
-// }
-
 // another version
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// FormValue can also get the query parameters from the URL
@@ -88,12 +73,27 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if nothing went wrong, set the user cookies
 	cookie := http.Cookie{
 		Name:  "email",
 		Value: user.Email,
 		Path:  "/",
+		// this will prevent js to access the cookie
+		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)
 
 	fmt.Fprintf(w, "User authenticated: %+v", user)
+}
+
+func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	// get the cookie from the request
+	email, err := r.Cookie("email")
+	if err != nil {
+		fmt.Fprint(w, "The email cookie could not be read.")
+		return
+	}
+
+	fmt.Fprintf(w, "Email cookie: %s\n", email.Value)
+	fmt.Fprintf(w, "Headers: %+v\n", r.Header)
 }

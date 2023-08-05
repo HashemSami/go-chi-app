@@ -14,13 +14,13 @@ type User struct {
 	PasswordHash string
 }
 
-type UserService struct {
-	DB *sql.DB
-}
-
 type NewUser struct {
 	Email    string
 	Password string
+}
+
+type UserService struct {
+	DB *sql.DB
 }
 
 func (us *UserService) Create(nu NewUser) (*User, error) {
