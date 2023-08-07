@@ -51,7 +51,7 @@ func main() {
 	usersC := controllers.Users{
 		UserService: &userService,
 	}
-	usersC.Templates.New = signupTpl
+	usersC.Templates.SignUp = signupTpl
 	usersC.Templates.SignIn = signinTpl
 
 	r.Use(middleware.Logger)
@@ -59,7 +59,7 @@ func main() {
 	r.Get("/", controllers.StaticHandler(homeTpl))
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
 	r.Get("/faq", controllers.FAQ(faqTpl))
-	r.Get("/signup", usersC.New)
+	r.Get("/signup", usersC.SignUp)
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)

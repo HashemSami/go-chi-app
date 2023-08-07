@@ -9,13 +9,13 @@ import (
 
 type Users struct {
 	Templates struct {
-		New    Template
+		SignUp Template
 		SignIn Template
 	}
 	UserService *models.UserService
 }
 
-func (u Users) New(w http.ResponseWriter, r *http.Request) {
+func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
@@ -24,7 +24,7 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	// to the form as an initial data
 	data.Email = r.FormValue("email")
 	// we need a view to render
-	u.Templates.New.Execute(w, data)
+	u.Templates.SignUp.Execute(w, r, data)
 }
 
 // another version
@@ -57,7 +57,7 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	// to the form as an initial data
 	data.Email = r.FormValue("email")
 	// we need a view to render
-	u.Templates.SignIn.Execute(w, data)
+	u.Templates.SignIn.Execute(w, r, data)
 }
 
 func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
