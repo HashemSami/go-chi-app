@@ -28,7 +28,6 @@ func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
 	u.Templates.SignUp.Execute(w, r, data)
 }
 
-// another version
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// FormValue can also get the query parameters from the URL
 	// getting the same name attribute used in the html
@@ -62,13 +61,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coockie := http.Cookie{
-		Name:     "session",
-		Value:    session.Token,
-		Path:     "/",
-		HttpOnly: true,
-	}
-	http.SetCookie(w, &coockie)
+	setCookie(w, CookieSession, session.Token)
 
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
@@ -108,14 +101,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if nothing went wrong, set the user cookies
-	cookie := http.Cookie{
-		Name:  "session",
-		Value: session.Token,
-		Path:  "/",
-		// this will prevent js to access the cookie
-		HttpOnly: true,
-	}
-	http.SetCookie(w, &cookie)
+	setCookie(w, CookieSession, session.Token)
 
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
@@ -124,7 +110,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 // taken from the headers cookies
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	// get the cookie from the request
-	tokenCookie, err := r.Cookie("session")
+	token, err := readCookie(r, CookieSession)
 	if err != nil {
 		// if the session already exists
 		fmt.Println(err)
@@ -134,7 +120,7 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the user's data using the session token
-	user, err := u.SessionService.User(tokenCookie.Value)
+	user, err := u.SessionService.User(token)
 	if err != nil {
 		// if not able to bring the user data using the token
 		fmt.Println(err)
@@ -143,5 +129,5 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Current user: %s\n", user.Email)
+	fmt.Fprintf(w, "Current user: %s\n", user)
 }
