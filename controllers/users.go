@@ -31,12 +31,9 @@ func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// FormValue can also get the query parameters from the URL
 	// getting the same name attribute used in the html
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-
 	nu := models.NewUser{
-		Email:    email,
-		Password: password,
+		Email:    r.FormValue("email"),
+		Password: r.FormValue("password"),
 	}
 
 	user, err := u.UserService.Create(nu)
@@ -46,10 +43,11 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("user created: ", user)
 	// creating session token in the sessions database
 	session, err := u.SessionService.Create(user.ID)
 	if err != nil {
-		// if the session already exists
+		// if the session doesn't already exists
 		fmt.Println(err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		//  TODO: long term, we should show a warning about not
@@ -79,12 +77,12 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
-	data := models.NewUser{
+	nu := models.NewUser{
 		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
 	}
 
-	user, err := u.UserService.Authenticate(data)
+	user, err := u.UserService.Authenticate(nu)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -129,7 +127,7 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Current user: %v\n", user)
+	fmt.Fprintf(w, "Current user: %v\n", user.Email)
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {

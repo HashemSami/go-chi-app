@@ -52,26 +52,18 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	}
 
 	// 2.1 Query for user's session
-	// 2.2 If found, update the user's session
-	// 2.3 if not found, create a new session for the user
+	// 2.2 if not found, create a new session for the user
+	// 2.3 If found, update the user's session
 	row := ss.DB.QueryRow(`
-		UPDATE sessions
-		SET token_hash = $2
-		WHERE user_id = $1
-		RETURNING id;
+	INSERT INTO sessions(user_id, token_hash)
+	VALUES ($1, $2)
+	ON CONFLICT (user_id) DO
+	UPDATE
+	SET token_hash = $2
+	RETURNING id;
 		`, session.UserID, session.TokenHash)
 	err = row.Scan(&session.ID)
 
-	if err == sql.ErrNoRows {
-		row = ss.DB.QueryRow(`
-		INSERT INTO sessions (user_id, token_hash)
-		VALUES ($1,$2)
-		RETURNING id;
-		`, session.UserID, session.TokenHash)
-		err = row.Scan(&session.ID)
-	}
-
-	// this error will cover the last two errors above
 	if err != nil {
 		return nil, fmt.Errorf("create: %w", err)
 	}

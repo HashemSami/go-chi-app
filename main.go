@@ -16,7 +16,7 @@ import (
 func main() {
 	r := chi.NewRouter()
 
-	// parsing the html files before srving the app
+	// parsing the html files before serving the app
 	// to users
 	homeTpl := views.Must(
 		views.ParseFS(templates.FS, "home.html", "tailwind.html"),
@@ -64,7 +64,7 @@ func main() {
 	r.Get("/contact", controllers.StaticHandler(contactTpl))
 	r.Get("/faq", controllers.FAQ(faqTpl))
 	r.Get("/signup", usersC.SignUp)
-	r.Post("/users", usersC.Create)
+	r.Post("/signup", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.ProcessSignOut)
@@ -77,10 +77,14 @@ func main() {
 	csrfKey := "kfjggbctiopwoidjipiuewdxhjksla"
 	csrfMw := csrf.Protect(
 		[]byte(csrfKey),
+		csrf.Path("/"),
 		// TODO: FIX this before deploying
 		// for HTTPS
 		csrf.Secure(false),
 	)
+
+	// r2 := chi.NewRouter()
+	// r2.Mount("/api", r)
 
 	fmt.Println("Starting the server on :3000...")
 	http.ListenAndServe(":3000", csrfMw(r))

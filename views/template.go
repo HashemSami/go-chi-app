@@ -78,6 +78,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 
 	w.Header().Set("Content-Type", "text/html; charset-utf-8")
 
+	// putting all the HTML inside a buffer fist before executing will
+	// make sure that all the data is rendered
+	// can cause issue if we have a big HTML size
 	var buf bytes.Buffer
 	err = tpl.Execute(&buf, data)
 	// err = tpl.Execute(w, data)
