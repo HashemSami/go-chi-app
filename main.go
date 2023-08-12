@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/HashemSami/go-chi-app/controllers"
+	"github.com/HashemSami/go-chi-app/migrations"
 	"github.com/HashemSami/go-chi-app/models"
 	"github.com/HashemSami/go-chi-app/templates"
 	"github.com/HashemSami/go-chi-app/views"
@@ -41,6 +42,12 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	// setting the migration code
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	// get the Services
 	userService := models.UserService{
