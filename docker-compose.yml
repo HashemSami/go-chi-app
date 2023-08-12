@@ -21,3 +21,4 @@ services:
     ports:
       - 3333:8080
 #docker compose exec -it db psql -U hashem -d lenslocked
+# host=localhost port=5432 user=hashem password=4g5gbook dbname=lenslocked sslmode=disable
