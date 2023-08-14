@@ -15,7 +15,19 @@ import (
 )
 
 func main() {
-	r := chi.NewRouter()
+	// get the DB connection
+	cfg := models.DefaultPostgresConfig()
+	db, err := models.Open(cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// setting the migration code
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	// parsing the html files before serving the app
 	// to users
@@ -35,20 +47,6 @@ func main() {
 		views.ParseFS(templates.FS, "signin.html", "tailwind.html"),
 	)
 
-	// get the DB connection
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	// setting the migration code
-	err = models.MigrateFS(db, migrations.FS, ".")
-	if err != nil {
-		panic(err)
-	}
-
 	// get the Services
 	userService := models.UserService{
 		DB: db,
@@ -65,23 +63,7 @@ func main() {
 	usersC.Templates.SignUp = signupTpl
 	usersC.Templates.SignIn = signinTpl
 
-	r.Use(middleware.Logger)
-
-	r.Get("/", controllers.StaticHandler(homeTpl))
-	r.Get("/contact", controllers.StaticHandler(contactTpl))
-	r.Get("/faq", controllers.FAQ(faqTpl))
-	r.Get("/signup", usersC.SignUp)
-	r.Post("/signup", usersC.Create)
-	r.Get("/signin", usersC.SignIn)
-	r.Post("/signin", usersC.ProcessSignIn)
-	r.Post("/signout", usersC.ProcessSignOut)
-	r.Get("/users/me", usersC.CurrentUser)
-
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Page not Found", http.StatusNotFound)
-	})
-
-	// setting middlewares
+	// setting middleware
 	umw := controllers.UserMiddleware{
 		SessionService: &sessionService,
 	}
@@ -95,9 +77,39 @@ func main() {
 		csrf.Secure(false),
 	)
 
+	// setup the handlers
+	r := chi.NewRouter()
 	// r2 := chi.NewRouter()
 	// r2.Mount("/api", r)
 
+	r.Use(middleware.Logger)
+	r.Use(csrfMw)
+	r.Use(umw.SetUser)
+
+	// setting our routes
+	r.Get("/", controllers.StaticHandler(homeTpl))
+	r.Get("/contact", controllers.StaticHandler(contactTpl))
+	r.Get("/faq", controllers.FAQ(faqTpl))
+	r.Get("/signup", usersC.SignUp)
+	r.Post("/signup", usersC.Create)
+	r.Get("/signin", usersC.SignIn)
+	r.Post("/signin", usersC.ProcessSignIn)
+	r.Post("/signout", usersC.ProcessSignOut)
+
+	// provide a spicific functionality to the current user
+	// rout that will apply out user middleware
+	r.Route("/users/me", func(r chi.Router) {
+		// set the user middleware just for the routes that
+		// start with this path
+		r.Use(umw.RequireUser)
+		r.Get("/", usersC.CurrentUser)
+	})
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Page not Found", http.StatusNotFound)
+	})
+
+	// Start the server
 	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", csrfMw(umw.SetUser(r)))
+	http.ListenAndServe(":3000", r)
 }

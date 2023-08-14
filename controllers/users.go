@@ -105,38 +105,12 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
-// validating the user request byt verifying the token
-// taken from the headers cookies
+// User required route
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	// the context that will be set from the middleware
 	user := context.User(r.Context())
-	if user != nil {
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
+
 	fmt.Fprintf(w, "Current user: %v\n", user.Email)
-
-	// // get the cookie from the request
-	// token, err := readCookie(r, CookieSession)
-	// if err != nil {
-	// 	// if the session already exists
-	// 	fmt.Println(err)
-	// 	// redirect to resigning to set the new cookies
-	// 	http.Redirect(w, r, "/signin", http.StatusFound)
-	// 	return
-	// }
-
-	// // get the user's data using the session token
-	// user, err := u.SessionService.User(token)
-	// if err != nil {
-	// 	// if not able to bring the user data using the token
-	// 	fmt.Println(err)
-	// 	// redirect to resigning to set the new cookies
-	// 	http.Redirect(w, r, "/signin", http.StatusFound)
-	// 	return
-	// }
-
-	// fmt.Fprintf(w, "Current user: %v\n", user.Email)
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
@@ -161,30 +135,52 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/signin", http.StatusFound)
 }
 
+// ================================================================
+// user middleware
 type UserMiddleware struct {
 	SessionService *models.SessionService
 }
 
 func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get the cookie from the request
 		token, err := readCookie(r, CookieSession)
 		if err != nil {
-			// proceed with the rquest and asume that the user is not signed in
+			// proceed with the request and assume that the user is not signed in
 			next.ServeHTTP(w, r)
 			return
 		}
 
+		// get the user's data using the session token
 		user, err := umw.SessionService.User(token)
 		if err != nil {
+			// if not able to bring the user data using the token
+			fmt.Println(err)
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// if the ser if ound, set the context and set the rquest to the next handler
+		// if the user is found, set the context and set the request to the next handler
 		ctx := r.Context()
 		ctx = context.WithUser(ctx, user)
 		// update the request context
 		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// check the user if their present, if not, redirect the user to the
+// sign in page
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+
+		// if the user is present, go to the next handler
 		next.ServeHTTP(w, r)
 	})
 }
