@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/HashemSami/go-chi-app/context"
 	"github.com/HashemSami/go-chi-app/models"
 )
 
@@ -107,27 +108,35 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 // validating the user request byt verifying the token
 // taken from the headers cookies
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	// get the cookie from the request
-	token, err := readCookie(r, CookieSession)
-	if err != nil {
-		// if the session already exists
-		fmt.Println(err)
-		// redirect to resigning to set the new cookies
+	// the context that will be set from the middleware
+	user := context.User(r.Context())
+	if user != nil {
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-
-	// get the user's data using the session token
-	user, err := u.SessionService.User(token)
-	if err != nil {
-		// if not able to bring the user data using the token
-		fmt.Println(err)
-		// redirect to resigning to set the new cookies
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
 	fmt.Fprintf(w, "Current user: %v\n", user.Email)
+
+	// // get the cookie from the request
+	// token, err := readCookie(r, CookieSession)
+	// if err != nil {
+	// 	// if the session already exists
+	// 	fmt.Println(err)
+	// 	// redirect to resigning to set the new cookies
+	// 	http.Redirect(w, r, "/signin", http.StatusFound)
+	// 	return
+	// }
+
+	// // get the user's data using the session token
+	// user, err := u.SessionService.User(token)
+	// if err != nil {
+	// 	// if not able to bring the user data using the token
+	// 	fmt.Println(err)
+	// 	// redirect to resigning to set the new cookies
+	// 	http.Redirect(w, r, "/signin", http.StatusFound)
+	// 	return
+	// }
+
+	// fmt.Fprintf(w, "Current user: %v\n", user.Email)
 }
 
 func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
@@ -150,4 +159,32 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	// delete the users cookie
 	deleteCookie(w, CookieSession)
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := readCookie(r, CookieSession)
+		if err != nil {
+			// proceed with the rquest and asume that the user is not signed in
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, err := umw.SessionService.User(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// if the ser if ound, set the context and set the rquest to the next handler
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		// update the request context
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
 }
