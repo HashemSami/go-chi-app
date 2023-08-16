@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/HashemSami/go-chi-app/context"
 	"github.com/HashemSami/go-chi-app/models"
@@ -10,11 +11,15 @@ import (
 
 type Users struct {
 	Templates struct {
-		SignUp Template
-		SignIn Template
+		SignUp         Template
+		SignIn         Template
+		ForgotPassword Template
+		CheckYourEmail Template
 	}
-	UserService    *models.UserService
-	SessionService *models.SessionService
+	UserService          *models.UserService
+	SessionService       *models.SessionService
+	PasswordResetService *models.PasswordResetService
+	EmailService         *models.EmailService
 }
 
 func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -133,6 +138,52 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	// delete the users cookie
 	deleteCookie(w, CookieSession)
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+// the page that will ask the user to provide the email that will
+// receive the password reset
+func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+
+	data.Email = r.FormValue("email")
+	u.Templates.ForgotPassword.Execute(w, r, data)
+}
+
+// getting the email value from the form, and process sending the forgot
+// link to the user's email
+func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+	pwReset, err := u.PasswordResetService.Create(data.Email)
+	if err != nil {
+		// TODO: Handle other cases in the future. for instance, if a user does not
+		// exist with that email address.
+		fmt.Println(err)
+		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		return
+	}
+
+	// using the URL package to construct the reset URL query values
+	vals := url.Values{
+		"token": {pwReset.Token},
+	}
+	resetURL := "https://www.lenslocked.com/reset-pw?" + vals.Encode()
+
+	err = u.EmailService.ForgotPassword(data.Email, resetURL)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		return
+	}
+	// redirect the user to the check your email page after sending the token
+	// email to the user
+	// note: the toke will not be rendered at this page, token will be only
+	// sent to the users email
+	u.Templates.CheckYourEmail.Execute(w, r, data)
 }
 
 // ================================================================

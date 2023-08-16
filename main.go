@@ -46,6 +46,9 @@ func main() {
 	signinTpl := views.Must(
 		views.ParseFS(templates.FS, "signin.html", "tailwind.html"),
 	)
+	forgotPasswordTpl := views.Must(
+		views.ParseFS(templates.FS, "forgot_password.html", "tailwind.html"),
+	)
 
 	// get the Services
 	userService := models.UserService{
@@ -62,6 +65,7 @@ func main() {
 	}
 	usersC.Templates.SignUp = signupTpl
 	usersC.Templates.SignIn = signinTpl
+	usersC.Templates.ForgotPassword = forgotPasswordTpl
 
 	// setting middleware
 	umw := controllers.UserMiddleware{
@@ -95,6 +99,8 @@ func main() {
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.ProcessSignOut)
+	r.Get("/fotgot-pw", usersC.ForgotPassword)
+	r.Post("/fotgot-pw", usersC.ProcessForgotPassword)
 
 	// provide a spicific functionality to the current user
 	// rout that will apply out user middleware
