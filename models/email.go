@@ -22,7 +22,7 @@ type SMTPConfig struct {
 	Host     string
 	Port     int
 	UserName string
-	PassWord string
+	Password string
 }
 
 type EmailService struct {
@@ -41,7 +41,7 @@ func NewEmailService(config SMTPConfig) *EmailService {
 		dialer: mail.NewDialer(config.Host,
 			config.Port,
 			config.UserName,
-			config.PassWord,
+			config.Password,
 		),
 	}
 	return &es

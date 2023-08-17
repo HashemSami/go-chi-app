@@ -15,6 +15,7 @@ type Users struct {
 		SignIn         Template
 		ForgotPassword Template
 		CheckYourEmail Template
+		ResetPassword  Template
 	}
 	UserService          *models.UserService
 	SessionService       *models.SessionService
@@ -49,7 +50,6 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("user created: ", user)
 	// creating session token in the sessions database
 	session, err := u.SessionService.Create(user.ID)
 	if err != nil {
@@ -184,6 +184,49 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 	// note: the toke will not be rendered at this page, token will be only
 	// sent to the users email
 	u.Templates.CheckYourEmail.Execute(w, r, data)
+}
+
+func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Token string
+	}
+
+	data.Token = r.FormValue("token")
+	u.Templates.ResetPassword.Execute(w, r, data)
+}
+
+func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Token    string
+		Password string
+	}
+
+	data.Token = r.FormValue("token")
+	data.Password = r.FormValue("password")
+
+	user, err := u.PasswordResetService.Consume(data.Token)
+	if err != nil {
+		fmt.Println(err)
+		// TODO: distinguish between types of errors
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: update the users password
+
+	// sign in the user after resetting the password
+	// any errors from this point onwards, should be redirected to the
+	// sign in page
+
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+
+	setCookie(w, CookieSession, session.Token)
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
 // ================================================================

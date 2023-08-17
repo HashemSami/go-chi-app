@@ -31,7 +31,7 @@ func main() {
 		Host:     host,
 		Port:     port,
 		UserName: username,
-		PassWord: password,
+		Password: password,
 	}
 
 	es := models.NewEmailService(conf)
