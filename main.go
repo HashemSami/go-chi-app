@@ -99,6 +99,9 @@ func main() {
 	checkYourEmailTpl := views.Must(
 		views.ParseFS(templates.FS, "check_your_email.html", "tailwind.html"),
 	)
+	resetPasswordTpl := views.Must(
+		views.ParseFS(templates.FS, "reset_pw.html", "tailwind.html"),
+	)
 
 	// get the Services
 	userService := &models.UserService{
@@ -123,6 +126,7 @@ func main() {
 	usersC.Templates.SignIn = signinTpl
 	usersC.Templates.ForgotPassword = forgotPasswordTpl
 	usersC.Templates.CheckYourEmail = checkYourEmailTpl
+	usersC.Templates.ResetPassword = resetPasswordTpl
 
 	// setting middleware
 	umw := controllers.UserMiddleware{
@@ -157,6 +161,8 @@ func main() {
 	r.Post("/signout", usersC.ProcessSignOut)
 	r.Get("/forgot-pw", usersC.ForgotPassword)
 	r.Post("/forgot-pw", usersC.ProcessForgotPassword)
+	r.Get("/reset-pw", usersC.ResetPassword)
+	r.Post("/reset-pw", usersC.ProcessResetPassword)
 
 	// provide a spicific functionality to the current user
 	// rout that will apply out user middleware
