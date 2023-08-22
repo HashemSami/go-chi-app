@@ -2,6 +2,7 @@ package views
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -13,6 +14,10 @@ import (
 	"github.com/HashemSami/go-chi-app/models"
 	"github.com/gorilla/csrf"
 )
+
+type public interface {
+	Public() string
+}
 
 func Must(t Template, err error) Template {
 	if err != nil {
@@ -38,11 +43,7 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 				return "", fmt.Errorf("currentUser not implemented")
 			},
 			"errors": func() []string {
-				return []string{
-					"Don't do that",
-					"The email address you provided is already associated with an account",
-					"Something went wrong",
-				}
+				return nil
 			},
 		},
 	)
@@ -68,7 +69,7 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}, errs ...error) {
 	// to avoid multiple request executing the same template
 	// will clone the template every time the execute function is called
 	// so every user will their own version of the template
@@ -80,6 +81,8 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 		return
 	}
 
+	// to avoid multiple execution of the errors
+	errMsgs := errMessages(errs...)
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() template.HTML {
@@ -87,6 +90,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
+			},
+			"errors": func() []string {
+				return errMsgs
 			},
 		},
 	)
@@ -107,4 +113,18 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 	}
 
 	io.Copy(w, &buf)
+}
+
+func errMessages(errs ...error) []string {
+	var msgs []string
+	for _, err := range errs {
+		var pubErr public
+		if errors.As(err, &pubErr) {
+			msgs = append(msgs, pubErr.Public())
+		} else {
+			fmt.Println(err)
+			msgs = append(msgs, "Something went wrong.")
+		}
+	}
+	return msgs
 }

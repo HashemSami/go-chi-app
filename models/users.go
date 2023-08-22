@@ -2,11 +2,16 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrEmailTaken = errors.New("models: email address is already in use")
 
 type User struct {
 	ID           int
@@ -47,6 +52,14 @@ func (us *UserService) Create(nu NewUser) (*User, error) {
 
 	err = row.Scan(&user.ID)
 	if err != nil {
+		var pgError *pgconn.PgError
+		// here we are passing a pointer to the PgError pointer
+		// so can errors.As matching the two pointers
+		if errors.As(err, &pgError) {
+			if pgError.Code == pgerrcode.UniqueViolation {
+				return nil, ErrEmailTaken
+			}
+		}
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 

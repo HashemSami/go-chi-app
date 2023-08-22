@@ -45,8 +45,11 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.UserService.Create(nu)
 	if err != nil {
+		// if there error creating the user
+		// execute the signup page with passing the error
+		u.Templates.SignUp.Execute(w, r, nu, err)
 		fmt.Println(err)
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		// http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		return
 	}
 
