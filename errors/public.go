@@ -1,4 +1,4 @@
-package appErrors
+package errors
 
 // Public wraps the original error with a new error that has
 // a 'Public() string' method that will return a message that is

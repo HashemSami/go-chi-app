@@ -1,13 +1,12 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
-	appErrors "github.com/HashemSami/go-chi-app/apperrors"
 	"github.com/HashemSami/go-chi-app/context"
+	"github.com/HashemSami/go-chi-app/errors"
 	"github.com/HashemSami/go-chi-app/models"
 )
 
@@ -50,7 +49,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		// if there error creating the user
 		// execute the signup page with passing the error
 		if errors.Is(err, models.ErrEmailTaken) {
-			err = appErrors.Public(
+			err = errors.Public(
 				err,
 				"That email address is already associated with an account",
 			)
