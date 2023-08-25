@@ -62,3 +62,59 @@ func (gs *GalleryService) ByID(id int) (*Gallery, error) {
 
 	return &gallery, nil
 }
+
+func (gs GalleryService) BYUserID(userID int) ([]Gallery, error) {
+	rows, err := gs.DB.Query(`
+    SELECT id, title
+    FROM galleries
+    WHERE user_id = $1;
+  `, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query galleries by user: %w", err)
+	}
+
+	var galleries []Gallery
+
+	for rows.Next() {
+		gallery := Gallery{
+			UserID: userID,
+		}
+
+		err := rows.Scan(&gallery.ID, &gallery.Title)
+		if err != nil {
+			return nil, fmt.Errorf("query galleries by user: %w", err)
+		}
+
+		galleries = append(galleries, gallery)
+	}
+
+	// if error in for loop
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("query galleries by user: %w", err)
+	}
+
+	return galleries, nil
+}
+
+func (gs GalleryService) Update(gallery *Gallery) error {
+	_, err := gs.DB.Exec(`
+		UPDATE galleries
+		SET title = $2
+		WHERE id = $1;
+	`, gallery.ID, gallery.Title)
+	if err != nil {
+		return fmt.Errorf("update gallery: %w", err)
+	}
+	return nil
+}
+
+func (gs GalleryService) Delete(id int) error {
+	_, err := gs.DB.Exec(`
+		DELETE FROM galleries
+		WHERE id = $1;
+	`, id)
+	if err != nil {
+		return fmt.Errorf("delete gallery: %w", err)
+	}
+	return nil
+}
