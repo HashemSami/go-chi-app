@@ -102,6 +102,9 @@ func main() {
 	resetPasswordTpl := views.Must(
 		views.ParseFS(templates.FS, "reset_pw.html", "tailwind.html"),
 	)
+	newGalleryTpl := views.Must(
+		views.ParseFS(templates.FS, "galleries/new.html", "tailwind.html"),
+	)
 
 	// get the Services
 	userService := &models.UserService{
@@ -114,6 +117,9 @@ func main() {
 		DB: db,
 	}
 	emailService := models.NewEmailService(cfg.SMTP)
+	galleryService := &models.GalleryService{
+		DB: db,
+	}
 
 	// creating users controllers
 	usersC := controllers.Users{
@@ -127,6 +133,11 @@ func main() {
 	usersC.Templates.ForgotPassword = forgotPasswordTpl
 	usersC.Templates.CheckYourEmail = checkYourEmailTpl
 	usersC.Templates.ResetPassword = resetPasswordTpl
+
+	galleriesC := controllers.Galleries{
+		GalleryService: galleryService,
+	}
+	galleriesC.Templates.New = newGalleryTpl
 
 	// setting middleware
 	umw := controllers.UserMiddleware{
@@ -164,13 +175,23 @@ func main() {
 	r.Get("/reset-pw", usersC.ResetPassword)
 	r.Post("/reset-pw", usersC.ProcessResetPassword)
 
-	// provide a spicific functionality to the current user
+	// provide a specific functionality to the current user
 	// rout that will apply out user middleware
 	r.Route("/users/me", func(r chi.Router) {
 		// set the user middleware just for the routes that
 		// start with this path
 		r.Use(umw.RequireUser)
 		r.Get("/", usersC.CurrentUser)
+	})
+
+	r.Route("/galleries", func(r chi.Router) {
+		// group the routes that require the user
+		// to be signed in
+		r.Group(func(r chi.Router) {
+			r.Use(umw.RequireUser)
+			r.Get("/new", galleriesC.New)
+		})
+		// routes that don't require a user to be signed in
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
