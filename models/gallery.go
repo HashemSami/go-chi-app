@@ -52,7 +52,7 @@ func (gs *GalleryService) ByID(id int) (*Gallery, error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// now the controller package don't have to
-			// import as a dependency to check for the errors
+			// import sql as a dependency to check for the errors
 			// we only have to import ErrNotFound variable to check
 			// for the error
 			return nil, ErrNotFound
