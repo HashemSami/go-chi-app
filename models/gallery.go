@@ -97,6 +97,7 @@ func (gs GalleryService) BYUserID(userID int) ([]Gallery, error) {
 }
 
 func (gs GalleryService) Update(gallery *Gallery) error {
+	// don't want to return any values
 	_, err := gs.DB.Exec(`
 		UPDATE galleries
 		SET title = $2

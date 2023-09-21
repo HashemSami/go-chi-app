@@ -39,6 +39,7 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// redirect the user to the edit the gallery
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 
 	http.Redirect(w, r, editPath, http.StatusFound)
