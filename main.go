@@ -108,6 +108,9 @@ func main() {
 	editGalleryTpl := views.Must(
 		views.ParseFS(templates.FS, "galleries/edit.html", "tailwind.html"),
 	)
+	indexGalleryTpl := views.Must(
+		views.ParseFS(templates.FS, "galleries/index.html", "tailwind.html"),
+	)
 
 	// get the Services
 	userService := &models.UserService{
@@ -142,6 +145,7 @@ func main() {
 	}
 	galleriesC.Templates.New = newGalleryTpl
 	galleriesC.Templates.Edit = editGalleryTpl
+	galleriesC.Templates.Index = indexGalleryTpl
 
 	// setting middleware
 	umw := controllers.UserMiddleware{
@@ -193,6 +197,7 @@ func main() {
 		// to be signed in
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
+			r.Get("/", galleriesC.Index)
 			r.Get("/new", galleriesC.New)
 			r.Get("/{id}/edit", galleriesC.Edit)
 			r.Post("/", galleriesC.Create)

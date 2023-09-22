@@ -13,8 +13,9 @@ import (
 
 type Galleries struct {
 	Templates struct {
-		New  Template
-		Edit Template
+		New   Template
+		Edit  Template
+		Index Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -117,4 +118,32 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 
 	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	// we can add a new Gallery struct so we can have a layer that can
+	// defined a specific variables we can set instead of sending the
+	// the hole gallery object from the database
+	type Gallery struct {
+		ID    int
+		Title string
+	}
+	var data struct {
+		Galleries []Gallery
+	}
+	user := context.User(r.Context())
+	galleries, err := g.GalleryService.BYUserID(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+	}
+
+	for _, gallery := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID:    gallery.ID,
+			Title: gallery.Title,
+		})
+	}
+
+	g.Templates.Index.Execute(w, r, data)
 }
