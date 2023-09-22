@@ -68,7 +68,7 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 
 	// making sure that the user is editing the gallery belongs to the him/her
 	user := context.User(r.Context())
-	if gallery.ID != user.ID {
+	if gallery.UserID != user.ID {
 		http.Error(w, "you are not authorized to use this gallery", http.StatusForbidden)
 		return
 	}
