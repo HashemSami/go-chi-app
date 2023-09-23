@@ -111,6 +111,9 @@ func main() {
 	indexGalleryTpl := views.Must(
 		views.ParseFS(templates.FS, "galleries/index.html", "tailwind.html"),
 	)
+	showGalleryTpl := views.Must(
+		views.ParseFS(templates.FS, "galleries/show.html", "tailwind.html"),
+	)
 
 	// get the Services
 	userService := &models.UserService{
@@ -146,6 +149,7 @@ func main() {
 	galleriesC.Templates.New = newGalleryTpl
 	galleriesC.Templates.Edit = editGalleryTpl
 	galleriesC.Templates.Index = indexGalleryTpl
+	galleriesC.Templates.Show = showGalleryTpl
 
 	// setting middleware
 	umw := controllers.UserMiddleware{
@@ -204,6 +208,7 @@ func main() {
 			r.Post("/{id}", galleriesC.Update)
 		})
 		// routes that don't require a user to be signed in
+		r.Get("/{id}", galleriesC.Show)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
