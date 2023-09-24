@@ -14,6 +14,11 @@ type Gallery struct {
 
 type GalleryService struct {
 	DB *sql.DB
+
+	// ImagesDir is used to tell the GalleryServices where to store and locate
+	// images. If not set, the GalleryServices will default to using the "images"
+	// directory
+	ImagesDir string
 }
 
 func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
