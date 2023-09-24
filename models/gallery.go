@@ -4,7 +4,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 )
+
+type Image struct {
+	GalleryID int
+	Path      string
+	FileName  string
+}
 
 type Gallery struct {
 	ID     int
@@ -68,7 +76,7 @@ func (gs *GalleryService) ByID(id int) (*Gallery, error) {
 	return &gallery, nil
 }
 
-func (gs GalleryService) BYUserID(userID int) ([]Gallery, error) {
+func (gs *GalleryService) BYUserID(userID int) ([]Gallery, error) {
 	rows, err := gs.DB.Query(`
     SELECT id, title
     FROM galleries
@@ -101,7 +109,7 @@ func (gs GalleryService) BYUserID(userID int) ([]Gallery, error) {
 	return galleries, nil
 }
 
-func (gs GalleryService) Update(gallery *Gallery) error {
+func (gs *GalleryService) Update(gallery *Gallery) error {
 	// don't want to return any values
 	_, err := gs.DB.Exec(`
 		UPDATE galleries
@@ -114,7 +122,7 @@ func (gs GalleryService) Update(gallery *Gallery) error {
 	return nil
 }
 
-func (gs GalleryService) Delete(id int) error {
+func (gs *GalleryService) Delete(id int) error {
 	_, err := gs.DB.Exec(`
 		DELETE FROM galleries
 		WHERE id = $1;
@@ -123,4 +131,48 @@ func (gs GalleryService) Delete(id int) error {
 		return fmt.Errorf("delete gallery: %w", err)
 	}
 	return nil
+}
+
+func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
+	// looking for this pattern
+	// "images/gallery-%d/*"
+	globPattern := filepath.Join(gs.galleryDir(galleryID), "*")
+
+	allFiles, err := filepath.Glob(globPattern)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving gallery images: %w", err)
+	}
+
+	var images []Image
+	for _, file := range allFiles {
+		if hasExtension(file, gs.extensions()) {
+			images = append(images, Image{Path: file})
+		}
+	}
+	return images, nil
+}
+
+func (gs *GalleryService) extensions() []string {
+	return []string{".png", ".jpg", ".jpeg", ".gif"}
+}
+
+func (gs *GalleryService) galleryDir(galleryID int) string {
+	imagesDir := gs.ImagesDir
+	if imagesDir == "" {
+		imagesDir = "images"
+	}
+
+	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", galleryID))
+}
+
+// utility function to check if the file path has an extension
+func hasExtension(file string, extension []string) bool {
+	for _, ext := range extension {
+		file = strings.ToLower(file)
+		ext = strings.ToLower(ext)
+		if filepath.Ext(file) == ext {
+			return true
+		}
+	}
+	return false
 }
