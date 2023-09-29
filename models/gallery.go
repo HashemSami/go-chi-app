@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -146,7 +148,11 @@ func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
 	var images []Image
 	for _, file := range allFiles {
 		if hasExtension(file, gs.extensions()) {
-			images = append(images, Image{Path: file})
+			images = append(images, Image{
+				GalleryID: galleryID,
+				Path:      file,
+				FileName:  filepath.Base(file),
+			})
 		}
 	}
 	return images, nil
@@ -154,6 +160,40 @@ func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
 
 func (gs *GalleryService) extensions() []string {
 	return []string{".png", ".jpg", ".jpeg", ".gif"}
+}
+
+func (gs *GalleryService) Image(galleryID int, filename string) (Image, error) {
+	imagePath := filepath.Join(gs.galleryDir(galleryID), filename)
+
+	// get the status of the file
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		// return a custom error if the image does not exists
+		if errors.Is(err, fs.ErrNotExist) {
+			return Image{}, ErrNotFound
+		}
+		return Image{}, fmt.Errorf("querying for image: %w", err)
+	}
+
+	return Image{
+		FileName:  filename,
+		GalleryID: galleryID,
+		Path:      imagePath,
+	}, nil
+}
+
+func (gs *GalleryService) DeleteImage(galleryID int, filename string) error {
+	image, err := gs.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("deleting images: %w", err)
+	}
+
+	return nil
 }
 
 func (gs *GalleryService) galleryDir(galleryID int) string {

@@ -3,8 +3,8 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/HashemSami/go-chi-app/context"
@@ -59,21 +59,43 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		// errors already handled by the galleriesByID function
 		return
 	}
+	// we construct a new local image type because we want to have a deferent
+	// or a custom format to send to the front end, instead of exposing the
+	// hole type of the model.
+	type Image struct {
+		GalleryID int
+		Filename  string
+		// to escaping special characters on the file name
+		FileNameEscaped string
+	}
 	var data struct {
 		ID     int
 		Title  string
-		Images []string
+		Images []Image
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
-	for i := 0; i < 20; i++ {
-		// get random value between 0 and 500
-		// then add to it 200, so we can have values
-		// between 200 and 700
-		w, h := rand.Intn(500)+200, rand.Intn(500)+200
-		catImagesURL := fmt.Sprintf("https://placekitten.com/%d/%d", w, h)
-		data.Images = append(data.Images, catImagesURL)
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
 	}
+
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID:       gallery.ID,
+			Filename:        image.FileName,
+			FileNameEscaped: url.PathEscape(image.FileName),
+		})
+	}
+	// for i := 0; i < 20; i++ {
+	// 	// get random value between 0 and 500
+	// 	// then add to it 200, so we can have values
+	// 	// between 200 and 700
+	// 	w, h := rand.Intn(500)+200, rand.Intn(500)+200
+	// 	catImagesURL := fmt.Sprintf("https://placekitten.com/%d/%d", w, h)
+	// 	data.Images = append(data.Images, catImagesURL)
+	// }
 
 	g.Templates.Show.Execute(w, r, data)
 }
@@ -85,12 +107,33 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type Image struct {
+		GalleryID int
+		Filename  string
+		// to escaping special characters on the file name
+		FileNameEscaped string
+	}
 	var data struct {
-		ID    int
-		Title string
+		ID     int
+		Title  string
+		Images []Image
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+	}
+
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID:       gallery.ID,
+			Filename:        image.FileName,
+			FileNameEscaped: url.PathEscape(image.FileName),
+		})
+	}
 
 	g.Templates.Edit.Execute(w, r, data)
 }
@@ -155,6 +198,45 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
+// handler that will render the image using http
+// responding to the image tag src attribute
+func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return
+	}
+
+	image, err := g.GalleryService.Image(galleryID, filename)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Image not found", http.StatusNotFound)
+			return
+		}
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// images, err := g.GalleryService.Images(galleryID)
+	// var requestedImage models.Image
+	// imageFound := false
+	// for _, image := range images {
+	// 	if image.FileName == filename {
+	// 		requestedImage = image
+	// 		imageFound = true
+	// 		break
+	// 	}
+	// }
+	// if !imageFound {
+	// 	http.Error(w, "Image not found", http.StatusNotFound)
+	// 	return
+	// }
+
+	http.ServeFile(w, r, image.Path)
 }
 
 // =============================================================
