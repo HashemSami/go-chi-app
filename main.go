@@ -207,6 +207,7 @@ func main() {
 			r.Post("/", galleriesC.Create)
 			r.Post("/{id}", galleriesC.Update)
 			r.Post("/{id}/delete", galleriesC.Delete)
+			r.Post("/{id}/images/{filename}/delete", galleriesC.DeleteImage)
 		})
 		// routes that don't require a user to be signed in
 		r.Get("/{id}", galleriesC.Show)

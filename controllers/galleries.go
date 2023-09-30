@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/HashemSami/go-chi-app/context"
@@ -203,7 +204,7 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 // handler that will render the image using http
 // responding to the image tag src attribute
 func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
-	filename := chi.URLParam(r, "filename")
+	filename := g.filename(w, r)
 	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusNotFound)
@@ -237,6 +238,34 @@ func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	http.ServeFile(w, r, image.Path)
+}
+
+func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	filename := g.filename(w, r)
+	gallery, err := g.galleriesByID(w, r, g.userMustOwnGallery)
+	if err != nil {
+		// errors already handled by the galleriesByID & userMustOwnGallery functions
+		return
+	}
+
+	err = g.GalleryService.DeleteImage(gallery.ID, filename)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	// redirect to the edit page after deleting the image
+	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+
+	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+// a function to prevent dealing with image file names that has
+// some kind of path so any user can cd of the images path
+func (g Galleries) filename(w http.ResponseWriter, r *http.Request) string {
+	filename := chi.URLParam(r, "filename")
+
+	filename = filepath.Base(filename)
+	return filename
 }
 
 // =============================================================
