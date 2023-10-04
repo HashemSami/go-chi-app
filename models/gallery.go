@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -132,6 +133,14 @@ func (gs *GalleryService) Delete(id int) error {
 	if err != nil {
 		return fmt.Errorf("delete gallery: %w", err)
 	}
+
+	// Delete all the images inside this gallery as well
+	dir := gs.galleryDir(id)
+	fmt.Print(dir)
+	err = os.RemoveAll(dir)
+	if err != nil {
+		return fmt.Errorf("deleting images: %w", err)
+	}
 	return nil
 }
 
@@ -162,6 +171,10 @@ func (gs *GalleryService) extensions() []string {
 	return []string{".png", ".jpg", ".jpeg", ".gif"}
 }
 
+func (gs *GalleryService) imagesContentTypes() []string {
+	return []string{"image/png", "image/jpeg", "image/gif"}
+}
+
 func (gs *GalleryService) Image(galleryID int, filename string) (Image, error) {
 	imagePath := filepath.Join(gs.galleryDir(galleryID), filename)
 
@@ -180,6 +193,43 @@ func (gs *GalleryService) Image(galleryID int, filename string) (Image, error) {
 		GalleryID: galleryID,
 		Path:      imagePath,
 	}, nil
+}
+
+func (gs *GalleryService) CreateImage(galleryID int, filename string,
+	contents io.ReadSeeker,
+) error {
+	// checking for the extension and the file type
+	// before creating
+	err := checkContentType(contents, gs.imagesContentTypes())
+	if err != nil {
+		return fmt.Errorf("creating image %v: %w", filename, err)
+	}
+
+	err = checkExtension(filename, gs.extensions())
+	if err != nil {
+		return fmt.Errorf("creating image %v: %w", filename, err)
+	}
+
+	galleryDir := gs.galleryDir(galleryID)
+	// make the directory if not exists, along with the other parents
+	err = os.MkdirAll(galleryDir, 0o755)
+	if err != nil {
+		return fmt.Errorf("creating gallery-%d images directory: %w", galleryID, err)
+	}
+
+	imagePath := filepath.Join(galleryDir, filename)
+	dst, err := os.Create(imagePath)
+	if err != nil {
+		return fmt.Errorf("creating image file: %w", err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, contents)
+
+	if err != nil {
+		return fmt.Errorf("copying contents to images: %w", err)
+	}
+	return nil
 }
 
 func (gs *GalleryService) DeleteImage(galleryID int, filename string) error {
