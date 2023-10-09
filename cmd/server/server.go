@@ -13,6 +13,7 @@ import (
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 )
@@ -36,8 +37,18 @@ func loadEnvConfig() (config, error) {
 		return cfg, err
 	}
 	// PSQL
-	// TODO: Read the PSQL from the .env file
-	cfg.PSQL = models.DefaultPostgresConfig()
+	cfg.PSQL = models.PostgresConfig{
+		Host:     os.Getenv("PSQL_HOST"),
+		Port:     os.Getenv("PSQL_PORT"),
+		User:     os.Getenv("PSQL_USER"),
+		Password: os.Getenv("PSQL_PASSWORD"),
+		Database: os.Getenv("PSQL_DATABASE"),
+		SSLMode:  os.Getenv("PSQL_SSLMODE"),
+	}
+	// put a message on the console if connection error
+	if cfg.PSQL.Host == "" && cfg.PSQL.Port == "" {
+		return cfg, fmt.Errorf("No PSQL config provided.")
+	}
 	// SMTP
 	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
 	portStr := os.Getenv("SMTP_PORT")
@@ -47,13 +58,14 @@ func loadEnvConfig() (config, error) {
 	}
 	cfg.SMTP.UserName = os.Getenv("SMTP_USERNAME")
 	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
 	// CSRF
-	// TODO:Read the CSRF values from the .env file
-	cfg.CSRF.Key = "kfjggbctiopwoidjipiuewdxhjksla"
-	cfg.CSRF.Secure = false
+	cfg.CSRF.Key = os.Getenv("CSRF_KEY")
+	// if it has any value other than true. set to false
+	cfg.CSRF.Secure = os.Getenv("CSRF_SECURE") == "true"
+
 	// Server
-	// TODO: Read the server values from the .env file
-	cfg.Server.Address = ":3000"
+	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 
 	return cfg, nil
 }
@@ -63,17 +75,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = run(cfg)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func run(cfg config) error {
 	// get the DB connection
 	db, err := models.Open(cfg.PSQL)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer db.Close()
 
 	// setting the migration code
 	err = models.MigrateFS(db, migrations.FS, ".")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// parsing the html files before serving the app
@@ -169,7 +190,18 @@ func main() {
 	// r2 := chi.NewRouter()
 	// r2.Mount("/api", r)
 
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+
+	})
+	r.Use(cors.Handler)
+
 	r.Use(middleware.Logger)
+	// r.Use(umw.SetHeaders)
 	r.Use(csrfMw)
 	r.Use(umw.SetUser)
 
@@ -215,14 +247,16 @@ func main() {
 		r.Get("/{id}/images/{filename}", galleriesC.Image)
 	})
 
+	// serving the assets directory with the routes
+	assetsHandler := http.FileServer(http.Dir("assets"))
+	r.Get("/assets/*", http.StripPrefix("/assets", assetsHandler).ServeHTTP)
+
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not Found", http.StatusNotFound)
 	})
 
 	// Start the server
 	fmt.Printf("Starting the server on %s...\n", cfg.Server.Address)
-	err = http.ListenAndServe(cfg.Server.Address, r)
-	if err != nil {
-		panic(err)
-	}
+
+	return http.ListenAndServe(cfg.Server.Address, r)
 }

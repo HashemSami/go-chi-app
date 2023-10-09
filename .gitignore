@@ -4,3 +4,6 @@ tmp.exe
 .env
 
 images/
+
+# node stuff
+node_modules/
