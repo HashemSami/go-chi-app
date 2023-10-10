@@ -7,7 +7,8 @@ services:
       dockerfile: Dockerfile
     restart: always
     # to assign a volume for the images inside of our container
-    volumes: -./images:/app/images
+    volumes:
+      - ./images:/app/images
 
     # this is for testing porposes.
     # TODO: remove Before deploying

@@ -1,4 +1,7 @@
-FROM golang
+
+# will use the golang image just to build up the binary file
+# then will send the binary file to the live server to run
+FROM golang AS builder
 
 WORKDIR /app
 
@@ -17,6 +20,19 @@ COPY . .
 # build the app and call the build "server"
 # -v for listing the build process in the terminal
 RUN go build -v -o ./server ./cmd/server
+
+# ================================================
+# build the server
+FROM ubuntu
+
+WORKDIR /app
+
+# copy only the required files the binary will use
+COPY ./assets ./assets
+COPY .env .env
+
+# copy the binary file
+COPY --from=builder /app/server ./server
 
 # run the server build
 CMD ./server

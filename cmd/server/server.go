@@ -13,7 +13,6 @@ import (
 	"github.com/HashemSami/go-chi-app/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 )
@@ -189,16 +188,6 @@ func run(cfg config) error {
 	r := chi.NewRouter()
 	// r2 := chi.NewRouter()
 	// r2.Mount("/api", r)
-
-	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-
-	})
-	r.Use(cors.Handler)
 
 	r.Use(middleware.Logger)
 	// r.Use(umw.SetHeaders)

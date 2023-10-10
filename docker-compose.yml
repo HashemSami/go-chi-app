@@ -8,3 +8,4 @@ services:
       POSTGRES_USER: ${PSQL_USER}
       POSTGRES_PASSWORD: ${PSQL_PASSWORD}
       POSTGRES_DB: ${PSQL_DATABASE}
+# docker compose -f docker-compose.yml -f docker-compose.production.yml up --build
