@@ -12,10 +12,19 @@ services:
 
     # this is for testing porposes.
     # TODO: remove Before deploying
-    ports:
-      - 3000:3000
+    # ports:
+    # - 3000:3000
 
     # services need to be ready before this service is created
     depends_on:
       # our db service
       - db
+
+  caddy:
+    image: caddy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
