@@ -31,9 +31,9 @@ services:
 
   db:
     environment:
-      - PGDATA: /var/lib/postgresql/data/pgdata
-      - POSTGRES_USER: ${PSQL_USER}
-      - POSTGRES_PASSWORD: ${PSQL_PASSWORD}
-      - POSTGRES_DB: ${PSQL_DATABASE}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+      POSTGRES_DB: ${PSQL_DATABASE}
     volumes:
       - ~/data/go-chi-app.com/psql:/var/lib/postgresql/data/pgdata
